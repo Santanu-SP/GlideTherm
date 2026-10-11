@@ -6,7 +6,11 @@ import {
   WorkerProfile,
 } from '../types/index.js';
 
-const API_BASE = '/api';
+// In production (Amplify), VITE_API_BASE_URL points to the API Gateway URL.
+// In local dev, it is unset and Vite's proxy forwards /api to localhost:5001.
+const API_BASE = import.meta.env.VITE_API_BASE_URL
+  ? `${import.meta.env.VITE_API_BASE_URL}/api`
+  : '/api';
 
 export interface AppConfig {
   supportedLocations: LocationInfo[];

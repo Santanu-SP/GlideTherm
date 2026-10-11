@@ -1,0 +1,164 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  GlideTherm — Climate-adaptive shift planning for outdoor workforces.
+  SAM template: API Gateway HTTP API + Lambda (Node.js 22.x) + DynamoDB.
+
+Globals:
+  Function:
+    Timeout: 29
+    MemorySize: 512
+    Runtime: nodejs22.x
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        NODE_ENV: production
+        DYNAMODB_TABLE_NAME: !Ref ShiftPlansTable
+        AWS_NODEJS_CONNECTION_REUSE_ENABLED: "1"
+
+Parameters:
+  AllowedOrigin:
+    Type: String
+    Default: "*"
+    Description: >
+      CORS allowed origin for the deployed Amplify site.
+      Set to the actual Amplify URL after first deployment (e.g. https://main.xxxx.amplifyapp.com).
+
+Resources:
+
+  # ─────────────────────────────────────────────
+  # DynamoDB table for saved shift plans
+  # ─────────────────────────────────────────────
+  ShiftPlansTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: glidetherm-shift-plans
+      BillingMode: PAY_PER_REQUEST   # on-demand — no provisioned capacity cost
+      AttributeDefinitions:
+        - AttributeName: planId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: planId
+          KeyType: HASH
+      # Retain data when stack is deleted to avoid accidental data loss
+      DeletionPolicy: Retain
+
+  # ─────────────────────────────────────────────
+  # IAM Execution Role for Lambda
+  # ─────────────────────────────────────────────
+  GlidethermLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: glidetherm-lambda-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: GlidethermDynamoAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                  - dynamodb:UpdateItem
+                Resource: !GetAtt ShiftPlansTable.Arn
+
+  # ─────────────────────────────────────────────
+  # Lambda Function (single function, all routes)
+  # ─────────────────────────────────────────────
+  GlidethermApiFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Format: esm
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - src/lambda.ts
+        External:
+          - '@aws-sdk/client-dynamodb'
+          - '@aws-sdk/lib-dynamodb'
+    Properties:
+      FunctionName: glidetherm-api
+      Role: !GetAtt GlidethermLambdaRole.Arn
+      Handler: lambda.handler
+      CodeUri: .
+      Description: GlideTherm backend — weather, heat assessment, shift planning, DynamoDB persistence
+      Events:
+        ApiRoot:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GlidethermHttpApi
+            Path: /{proxy+}
+            Method: ANY
+
+  # ─────────────────────────────────────────────
+  # API Gateway HTTP API
+  # ─────────────────────────────────────────────
+  GlidethermHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AllowedOrigin
+        AllowMethods:
+          - GET
+          - POST
+          - DELETE
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        MaxAge: 86400
+
+  # ─────────────────────────────────────────────
+  # CloudWatch Log Group (explicit for retention)
+  # ─────────────────────────────────────────────
+  GlidethermLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${GlidethermApiFunction}'
+      RetentionInDays: 14
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway base URL (no trailing slash)
+    Value: !Sub 'https://${GlidethermHttpApi}.execute-api.${AWS::Region}.amazonaws.com'
+    Export:
+      Name: GlidethermApiUrl
+
+  LambdaFunctionName:
+    Description: Lambda function name
+    Value: !Ref GlidethermApiFunction
+
+  DynamoDbTableName:
+    Description: DynamoDB table for saved shift plans
+    Value: !Ref ShiftPlansTable
+
+  CloudWatchLogGroup:
+    Description: CloudWatch log group for Lambda execution logs
+    Value: !Ref GlidethermLogGroup
+
+  Region:
+    Description: AWS region
+    Value: !Ref AWS::Region
+
+  StackName:
+    Description: CloudFormation stack name
+    Value: !Ref AWS::StackName
