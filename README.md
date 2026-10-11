@@ -1,214 +1,280 @@
-# GlideTherm
+# GlideTherm 🌡️
 
-> **"Beat the heat. Plan smarter shifts."**  
-> *Helping outdoor workforces make proactive, climate-informed decisions before peak thermal hazards arrive.*
-
----
-
-## 1. Problem Statement
-Outdoor workforces—including construction crews, municipal sanitation workers, delivery riders, and street vendors—frequently operate without practical guidance during extreme seasonal heat. 
-
-Conventional weather applications display ambient temperatures and humidity percentages, but fail to translate those observations into actionable worksite decisions. Supervisors are left without answers to critical operational questions:
-- *Which hours will expose crews to dangerous thermal strain?*
-- *When should heavy manual exertion be relocated indoors or rescheduled?*
-- *What specific hydration and shaded recovery intervals should be scheduled?*
-
-**GlideTherm** bridges this gap by transforming hourly meteorological forecasts and worksite conditions into clear, deterministic, and occupation-aware daily shift plans.
+> **Beat the heat. Plan smarter shifts.**
+> Climate-adaptive shift planning for India's outdoor workforce.
 
 ---
 
-## 2. Target Users & Demonstration Persona
-- **Primary Demonstration Persona**: Municipal or roadway maintenance supervisor overseeing a field crew in **Chennai, India**.
-- **Configurable Personas**:
-  - Civil Construction Crews
-  - Urban Delivery Riders
-  - Sanitation & Waste Teams
-  - Street Vendors & Market Staff
-  - Agricultural Field Workers
-- **Supported Cities**: Chennai, Bengaluru, New Delhi, Ahmedabad, and Hyderabad.
+## The Problem
+
+India's 400+ million outdoor workers — construction crews, sanitation workers, agricultural labourers, delivery riders, and maintenance teams — face escalating heat risk as climate change pushes summer temperatures above 44 °C in major cities.
+
+Raw temperature numbers are not enough. Supervisors need guidance on *when* to work, *when* to rest, *when* to move indoors — accounting for humidity, solar radiation, work intensity, and crew profile.
+
+**GlideTherm solves this.**
 
 ---
 
-## 3. How GlideTherm Works
-1. **Location & Worksite Configuration**: Select a target city and configure crew profile, shift hours, physical exertion intensity, worksite canopy shade, and whether indoor tasks are feasible.
-2. **Forecast Integration**: Hourly forecast data is retrieved from Open-Meteo or supplied via a verified deterministic demonstration scenario.
-3. **Deterministic Heat Strain Assessment**: The calculation engine calculates an explainable Heat Strain Index (HSI) reflecting thermal load, humidity, direct solar radiation, and metabolic pacing.
-4. **Adaptive Schedule Generation**: GlideTherm produces a chronological work plan—allocating heavy work to cooler hours, shifting prep indoors during midday solar peaks, and scheduling shaded hydration intervals.
-5. **Supervisor Decision Support**: Plain-language recommendations and an interactive crew safety checklist guide the team before and during the shift.
+## What It Does
+
+1. **Fetches live hourly weather** for Chennai, Bengaluru, New Delhi, Ahmedabad, and Hyderabad from Open-Meteo (free, no API key)
+2. **Computes a transparent Heat Strain Index (0–100)** for each hour — factoring apparent temperature, humidity, solar radiation, shade availability, work intensity, and wind speed
+3. **Generates a deterministic, time-blocked shift schedule** that:
+   - Schedules heavy labour during cooler morning windows
+   - Relocates crews indoors during peak heat (if indoor tasks are available)
+   - Inserts mandatory hydration and rest breaks
+   - Provides specific guidance per block
+4. **Persists saved plans in Amazon DynamoDB** for retrieval across sessions
 
 ---
 
-## 4. Key Differentiators
-- **Hourly Heat-Risk Visualization**: Dual-axis meteorological charting of air temperature, apparent heat index, relative humidity, and solar radiation.
-- **Occupation-Aware Planning**: Differentiates light, moderate, and heavy physical labor demands.
-- **Indoor Task Shifting**: Relocates eligible tasks indoors during peak 12:00–14:30 solar peaks.
-- **Explainable Recommendations**: Transparent rationale for every schedule recommendation.
-- **Dual Live & Demo Modes**: Real-time Open-Meteo forecasts with a deterministic offline demonstration fallback.
-- **Local-First Persistence**: Save, search, reopen, and delete shift plans stored in local JSON format.
+## Live Application
+
+| Environment | URL |
+|-------------|-----|
+| **Production** (AWS Amplify) | `https://main.[xxx].amplifyapp.com` *(fill after deployment)* |
+| **API Gateway** | `https://[api-id].execute-api.ap-south-1.amazonaws.com` *(fill after deployment)* |
+| Local dev (frontend) | http://localhost:3000 |
+| Local dev (backend) | http://localhost:5001 |
 
 ---
 
-## 5. Technology Stack
-- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Lucide Icons, Recharts, React Router v6.
-- **Backend**: Node.js (v24), Express, TypeScript, CORS.
-- **Data Persistence**: Local JSON file repository (`data/saved-plans.json`).
-- **Testing**: Vitest, React Testing Library, Supertest.
-- **Weather API**: Open-Meteo Free API (non-commercial, keyless tier).
+## Features
+
+- ✅ Live Open-Meteo weather forecast for 5 Indian cities
+- ✅ Hourly Heat Strain Index with explainable contributing factors
+- ✅ 4-level risk categorisation (Lower Concern → Severe Heat Advisory)
+- ✅ Best work window identification
+- ✅ 6 outdoor worker profiles (maintenance, construction, delivery, sanitation, street vendor, agricultural)
+- ✅ Heat-adaptive shift schedule generation
+- ✅ Indoor task scheduling during peak heat windows
+- ✅ Structured hydration break scheduling
+- ✅ Contextual operational recommendations
+- ✅ Deterministic demo fallback when live weather is unavailable
+- ✅ Clear data-source labelling (live vs simulated — never misrepresented)
+- ✅ Save, list, retrieve, and delete shift plans (DynamoDB in production)
+- ✅ Demo scenario reset
+- ✅ Responsive design (desktop and mobile)
 
 ---
 
-## 6. Architecture Overview
+## AWS Architecture
 
 ```
-GlideTherm/
-├── client/                     # Vite + React + TypeScript Frontend
-│   ├── src/
-│   │   ├── components/         # Reusable UI (AppShell, HeatRiskBadge, Timeline, etc.)
-│   │   ├── pages/              # Landing, Dashboard, Planner, Outlook, Safety, Plans, About
-│   │   ├── services/           # ApiService client layer with fallback resilience
-│   │   ├── types/              # Frontend TypeScript interfaces
-│   │   ├── App.tsx             # Route definitions
-│   │   └── main.tsx            # Application entrypoint
-│   └── package.json
-├── server/                     # Express + TypeScript Backend
-│   ├── src/
-│   │   ├── routes/             # Express API router (apiRoutes.ts)
-│   │   ├── services/           # weatherService, heatAssessmentService, shiftPlannerService, storageService
-│   │   ├── data/               # Supported locations and demo scenario baseline
-│   │   ├── types/              # Domain data contracts
-│   │   ├── app.ts              # Express application configuration
-│   │   └── index.ts            # Server entrypoint (Port 5001)
-│   └── tests/                  # Automated Vitest unit & integration tests
-├── data/
-│   └── saved-plans.json        # Local JSON persistence store
-└── package.json                # Root workspace configuration
+Browser (React SPA)
+      │
+      ▼ HTTPS
+AWS Amplify Hosting  ──── CloudFront CDN
+      │
+      ▼ fetch()
+Amazon API Gateway HTTP API  (ap-south-1)
+      │
+      ▼ Lambda Proxy
+AWS Lambda: glidetherm-api  (Node.js 22.x, arm64)
+    │                      │
+    ▼                      ▼
+Open-Meteo API        Amazon DynamoDB
+(live weather)        (saved shift plans)
+                           │
+                     CloudWatch Logs
 ```
+
+See [`demo/aws-architecture.md`](demo/aws-architecture.md) for full details, IAM permissions, and cost estimates.
+
+### AWS Services Used
+
+| Service | Role |
+|---------|------|
+| AWS Amplify Hosting | Frontend CDN + HTTPS |
+| Amazon API Gateway HTTP API | Route requests to Lambda |
+| AWS Lambda | Execute all backend logic |
+| Amazon DynamoDB | Persist saved shift plans (PAY_PER_REQUEST) |
+| Amazon CloudWatch Logs | Lambda execution evidence (14-day retention) |
+| AWS IAM | Least-privilege Lambda execution role |
 
 ---
 
-## 7. Local Setup & Quick Start
+## Local Development
 
 ### Prerequisites
-- Node.js >= 18.x (tested on v24.21.0)
-- npm >= 9.x
+- Node.js 20+
+- npm 10+
 
-### Installation
+### Setup
+
 ```bash
-# Clone the repository
-git clone <repo-url>
+git clone https://github.com/Santanu-SP/GlideTherm.git
 cd GlideTherm
-
-# Install workspace dependencies
-npm install
+npm install          # installs root + server + client workspaces
+npm run dev          # starts backend (:5001) and frontend (:3000) concurrently
 ```
 
-### Starting the Application
-You can run both client and server concurrently, or launch them individually:
+Open [http://localhost:3000](http://localhost:3000)
+
+The Vite dev server proxies `/api` requests to `localhost:5001` automatically.
+
+### Environment variables
+
+For local development, no `.env` file is required. The proxy handles API routing.
+
+For production builds, set `VITE_API_BASE_URL` (see [`.env.example`](.env.example)):
+```bash
+VITE_API_BASE_URL=https://<api-id>.execute-api.ap-south-1.amazonaws.com
+```
+
+---
+
+## Running Tests
 
 ```bash
-# Run both Backend (Port 5001) and Frontend (Port 3000) concurrently
-npm run dev
-
-# Or launch independently:
-npm run dev:server    # Backend API at http://localhost:5001
-npm run dev:client    # Vite Frontend at http://localhost:3000
+npm test                    # all tests (server + client)
+npm run test:server         # server unit + integration tests
+npm run test:client         # client component tests
 ```
 
-- **Frontend Application URL**: `http://localhost:3000`
-- **Backend API URL**: `http://localhost:5001`
-- **Backend Health Check**: `http://localhost:5001/api/health`
+Expected: **20/20 tests pass** (10 server business logic, 6 server API integration, 4 client components)
 
-### Building for Production
+---
+
+## AWS Deployment
+
+### Prerequisites
+- AWS CLI v2 authenticated: `aws login`
+- SAM CLI: `brew install aws-sam-cli`
+- Region: `ap-south-1` (Mumbai)
+
+### Step 1 — Build and deploy backend
 ```bash
-npm run build
+# Validate template
+sam validate --template template.yaml --region ap-south-1
+
+# Build Lambda bundle (esbuild)
+sam build --beta-features
+
+# Deploy (first time: guided)
+sam deploy --guided \
+  --stack-name glidetherm-demo \
+  --region ap-south-1 \
+  --parameter-overrides AllowedOrigin="*"
+
+# Get the API Gateway URL from outputs
+aws cloudformation describe-stacks \
+  --stack-name glidetherm-demo \
+  --region ap-south-1 \
+  --query 'Stacks[0].Outputs'
 ```
 
----
-
-## 8. Running Automated Tests
-GlideTherm includes comprehensive unit and integration test suites:
-
+### Step 2 — Build frontend with API URL
 ```bash
-# Run all server tests (HeatAssessment, ShiftPlanner, and API endpoints)
-npm run test:server
+cd client
+VITE_API_BASE_URL=https://<api-id>.execute-api.ap-south-1.amazonaws.com \
+  npm run build
+# Output: client/dist/
+```
 
-# Run all client tests (Components and Routing Smoke Tests)
-npm run test:client
+### Step 3 — Deploy frontend to Amplify
 
-# Run all tests across the workspace
-npm run test
+**Manual deployment (fastest):**
+```bash
+cd client/dist
+zip -r ../glidetherm-frontend.zip .
+```
+Then: AWS Console → Amplify → New App → Deploy without Git → upload the ZIP.
+
+Configure Amplify rewrite rules for SPA routing:
+- Source: `</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp|mjs)$)([^.]+$)/>`
+- Target: `/index.html`
+- Type: 200 (Rewrite)
+
+After Amplify deployment, update the `AllowedOrigin` parameter:
+```bash
+sam deploy --stack-name glidetherm-demo --region ap-south-1 \
+  --parameter-overrides AllowedOrigin="https://main.xxx.amplifyapp.com" \
+  --no-confirm-changeset
+```
+
+### Step 4 — Seed demo data
+```bash
+curl -X POST https://<api-id>.execute-api.ap-south-1.amazonaws.com/api/demo/reset
+```
+
+### Cleanup (when done)
+```bash
+sam delete --stack-name glidetherm-demo --region ap-south-1
+# Note: DynamoDB table has DeletionPolicy=Retain — delete manually if desired
 ```
 
 ---
 
-## 9. API Route Reference
+## API Reference
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/health` | Service health status and uptime verification |
-| `GET` | `/api/config` | Application metadata, supported cities, and crew profiles |
-| `GET` | `/api/weather` | Normalized hourly forecast (`?location=chennai&demo=false`) |
-| `GET` | `/api/dashboard` | Aggregated dashboard summary and primary recommendation |
-| `POST` | `/api/heat-assessment` | Calculates HSI and risk categories for supplied weather points |
-| `POST` | `/api/shift-plans` | Generates a climate-adaptive shift plan from settings |
-| `GET` | `/api/shift-plans` | Lists all saved shift plans |
-| `POST` | `/api/shift-plans/save` | Persists a shift plan into local storage |
-| `GET` | `/api/shift-plans/:id` | Retrieves a specific plan by ID |
-| `DELETE` | `/api/shift-plans/:id` | Deletes a plan from local storage |
-| `GET` | `/api/demo/scenario` | Returns the baseline Chennai demonstration scenario |
-| `POST` | `/api/demo/reset` | Restores default demonstration plans and reset states |
-
----
-
-## 10. Meteorological Data Attribution & Fallback Behavior
-- **Primary Data Source**: [Open-Meteo](https://open-meteo.com/), an open-source weather API providing hourly meteorological numerical weather prediction.
-- **Attribution Statement**: *"Weather data by Open-Meteo (https://open-meteo.com/)"*.
-- **Offline / Sandbox Resilience**: If the external weather service is unreachable or when running offline, GlideTherm automatically falls back to a deterministic, hot-season Chennai meteorological scenario (`isSimulatedData: true`) without application interruption or error screens.
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/health` | Service health check |
+| GET | `/api/config` | Supported locations and worker profiles |
+| GET | `/api/weather?location=&date=&demo=` | Hourly weather forecast |
+| GET | `/api/dashboard?location=&profile=&demo=` | Dashboard summary |
+| POST | `/api/heat-assessment` | Compute heat assessment for given weather points |
+| POST | `/api/shift-plans?demo=` | Generate a shift plan |
+| GET | `/api/shift-plans` | List all saved plans |
+| POST | `/api/shift-plans/save` | Save a plan to DynamoDB |
+| GET | `/api/shift-plans/:id` | Retrieve plan by ID |
+| DELETE | `/api/shift-plans/:id` | Delete a plan |
+| GET | `/api/demo/scenario` | Canonical Chennai demo scenario |
+| POST | `/api/demo/reset` | Reset to canonical demo state |
 
 ---
 
-## 11. Explanation of the Heat Strain Heuristic
-The GlideTherm **Heat Strain Index (HSI)** is an explainable calculation scoring thermal burden on a 0–100 scale:
-- **Baseline Thermal Load**: Derived from apparent temperature or air temperature.
-- **Evaporative Sweat Mitigation**: Adjusted for high relative humidity (>60%), which impedes natural cooling.
-- **Radiant Solar Irradiance**: Incorporates shortwave solar radiation (W/m²) modulated by worksite canopy shade (good, partial, or limited).
-- **Metabolic Physical Exertion**: Accounts for internal heat generated by heavy manual labor versus moderate or light duties.
-- **Categorization**:
-  - `0–37`: **Lower Relative Concern** (favourable outdoor work window)
-  - `38–61`: **Elevated Caution** (increased hydration and regular shade breaks)
-  - `62–81`: **High Caution** (reassess heavy outdoor exertion; transition indoors)
-  - `82–100`: **Severe Heat Advisory** (halt non-essential heavy manual labor)
+## Data Sources
+
+- **Weather:** [Open-Meteo](https://open-meteo.com/) — free meteorological forecast API, CC BY 4.0, no API key required
+- **Demo scenario:** Deterministic synthetic baseline modelled on realistic Chennai hot-season coastal conditions
 
 ---
 
-## 12. 3-Minute Demonstration Walkthrough
-1. **Landing Page**: Open `http://localhost:3000/`. Review the hero headline *"Plan the shift. Not the heat."* and interactive application preview.
-2. **Dashboard Overview**: Click **"Explore the demo"** to view `/app`. Observe current conditions in Chennai (36.5°C, feels like 44.5°C), the high-caution advisory badge, and the best outdoor work windows (06:00–10:00).
-3. **Shift Planner**: Navigate to `/app/planner`. Observe the default *Chennai Outdoor Maintenance Crew* profile (09:00–17:00).
-4. **Input Modulation**: Modify **Physical Work Intensity** from *Moderate* to *Heavy*, and verify **Indoor Tasks Feasible** is checked.
-5. **Generate Adaptive Schedule**: Click **"Generate Shift Plan"**. Observe how the schedule dynamically inserts an *Indoor Task Shift (11:30–14:00)* during peak solar irradiance and schedules mandatory shaded hydration breaks.
-6. **Supervisor Rationale**: Review the explainable recommendation explaining why heavy midday excavation was relocated.
-7. **Save & View Repository**: Name the plan and click **"Save Plan"**. Open `/app/plans` to verify the plan is stored.
-8. **Crew Safety Protocol**: Open `/app/safety` and toggle items in the Pre-Shift and Active Shift checklists.
+## Assessment Heuristic — Limitations
+
+The Heat Strain Index (HSI) is a **transparency-oriented educational heuristic**, not a certified medical or occupational health instrument.
+
+It does **not**:
+- Replace certified WBGT (Wet Bulb Globe Temperature) measurement
+- Account for individual worker acclimatisation, health status, or hydration level
+- Constitute a medical recommendation or safety guarantee
+- Meet regulatory occupational health standards
+
+**Do not use GlideTherm as the sole basis for worker safety decisions without professional occupational health review.**
 
 ---
 
-## 13. Future AWS Integration Plan
-*(Documentation reference only. No AWS resources or credentials are provisioned in this prototype.)*
+## Demo
 
-When transitioning from the local prototype to a production cloud deployment:
-- **Frontend Hosting**: AWS Amplify Hosting or Amazon S3 with Amazon CloudFront for static asset distribution.
-- **Backend API**: AWS Lambda running the Express handler via `@codegenie/serverless-express`, fronted by Amazon API Gateway.
-- **Data Persistence**: Amazon DynamoDB for scalable, multi-tenant shift plan storage replacing local JSON files.
-- **Forecasting Ingestion**: Amazon EventBridge scheduled rules triggering hourly Open-Meteo cache refreshes.
-- **Monitoring & Observability**: Amazon CloudWatch for execution metrics, latency logging, and heat advisory threshold alarms.
-
----
-
-## 14. Responsible-Use & Legal Disclaimer
-**GlideTherm is a decision-support prototype.** It is NOT a medical device, certified emergency service, or occupational-safety certifying system. Calculations represent internal heuristic estimations and are not black-globe Wet-Bulb Globe Temperature (WBGT) measurements. Official warnings issued by governmental meteorological agencies (such as the India Meteorological Department) and established workplace safety regulations must always take precedence.
+See the [`demo/`](demo/) directory for:
+- [`recording-script.md`](demo/recording-script.md) — Three-minute narrated script
+- [`shot-list.md`](demo/shot-list.md) — Shot-by-shot visual guide
+- [`recording-checklist.md`](demo/recording-checklist.md) — Pre-recording checklist
+- [`aws-architecture.md`](demo/aws-architecture.md) — Architecture diagram and cost breakdown
+- [`submission-writeup.md`](demo/submission-writeup.md) — Hackathon submission
+- [`ai-disclosure.md`](demo/ai-disclosure.md) — Honest AI tool disclosure
+- [`verification-results.md`](demo/verification-results.md) — Build, test, and API verification results
 
 ---
 
-## 15. AI Disclosure Reminder
-This project was designed, architected, and built with AI pair-programming assistance (Google Antigravity) for the Environmental Hackathon Heat and Water track.
+## Responsible Use
+
+- This tool assists planning decisions; it does not replace safety supervision
+- Always comply with local occupational health regulations
+- Involve qualified occupational health professionals before operational deployment
+- Worker health monitoring and buddy systems remain the supervisor's responsibility
+- The system's environmental claims are limited to demonstrating the scheduling concept; no impact measurements exist
+
+---
+
+## AI Disclosure
+
+Built with significant assistance from Claude Sonnet 4.6 (via Antigravity IDE by Google DeepMind). See [`demo/ai-disclosure.md`](demo/ai-disclosure.md) for full details.
+
+---
+
+## License
+
+This project is provided as a hackathon prototype. All third-party libraries retain their original licenses. See [`demo/ai-disclosure.md`](demo/ai-disclosure.md) for the full attribution table.
