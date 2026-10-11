@@ -10,6 +10,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1149.0",
+    "@aws-sdk/lib-dynamodb": "^3.1149.0",
+    "@vendia/serverless-express": "^4.12.6",
     "cors": "^2.8.5",
     "express": "^4.21.2"
   },

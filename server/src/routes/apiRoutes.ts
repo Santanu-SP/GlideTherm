@@ -4,7 +4,15 @@ import { WeatherService } from '../services/weatherService.js';
 import { HeatAssessmentService } from '../services/heatAssessmentService.js';
 import { ShiftPlannerService } from '../services/shiftPlannerService.js';
 import { StorageService } from '../services/storageService.js';
+import { DynamoStorageService } from '../services/dynamoStorageService.js';
 import { ShiftPlanRequest } from '../types/index.js';
+
+// When running on Lambda with DynamoDB configured, use DynamoDB; otherwise use local JSON file.
+const usesDynamo = !!process.env.DYNAMODB_TABLE_NAME;
+const Storage = usesDynamo
+  ? (DynamoStorageService as unknown as typeof StorageService)
+  : StorageService;
+
 
 export const apiRouter = Router();
 
@@ -156,7 +164,7 @@ apiRouter.post('/shift-plans', async (req: Request, res: Response) => {
     );
 
     if (requestData.saveImmediately) {
-      StorageService.savePlan(plan);
+      await Storage.savePlan(plan);
     }
 
     res.status(201).json(plan);
@@ -167,9 +175,9 @@ apiRouter.post('/shift-plans', async (req: Request, res: Response) => {
 });
 
 // GET /api/shift-plans
-apiRouter.get('/shift-plans', (_req: Request, res: Response) => {
+apiRouter.get('/shift-plans', async (_req: Request, res: Response) => {
   try {
-    const plans = StorageService.getSavedPlans();
+    const plans = await Storage.getSavedPlans();
     res.status(200).json(plans);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to retrieve saved plans';
@@ -178,13 +186,13 @@ apiRouter.get('/shift-plans', (_req: Request, res: Response) => {
 });
 
 // POST /api/shift-plans/save
-apiRouter.post('/shift-plans/save', (req: Request, res: Response) => {
+apiRouter.post('/shift-plans/save', async (req: Request, res: Response) => {
   try {
     const plan = req.body;
     if (!plan || !plan.id || !plan.schedule) {
       return res.status(400).json({ error: 'Invalid shift plan format' });
     }
-    const saved = StorageService.savePlan(plan);
+    const saved = await Storage.savePlan(plan);
     res.status(200).json(saved);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to save shift plan';
@@ -193,9 +201,9 @@ apiRouter.post('/shift-plans/save', (req: Request, res: Response) => {
 });
 
 // GET /api/shift-plans/:id
-apiRouter.get('/shift-plans/:id', (req: Request, res: Response) => {
+apiRouter.get('/shift-plans/:id', async (req: Request, res: Response) => {
   try {
-    const plan = StorageService.getSavedPlanById(req.params.id);
+    const plan = await Storage.getSavedPlanById(req.params.id);
     if (!plan) {
       return res.status(404).json({ error: `Plan with id '${req.params.id}' not found.` });
     }
@@ -207,9 +215,9 @@ apiRouter.get('/shift-plans/:id', (req: Request, res: Response) => {
 });
 
 // DELETE /api/shift-plans/:id
-apiRouter.delete('/shift-plans/:id', (req: Request, res: Response) => {
+apiRouter.delete('/shift-plans/:id', async (req: Request, res: Response) => {
   try {
-    const deleted = StorageService.deletePlan(req.params.id);
+    const deleted = await Storage.deletePlan(req.params.id);
     if (!deleted) {
       return res.status(404).json({ error: `Plan with id '${req.params.id}' not found.` });
     }
@@ -247,9 +255,9 @@ apiRouter.get('/demo/scenario', (_req: Request, res: Response) => {
 });
 
 // POST /api/demo/reset
-apiRouter.post('/demo/reset', (_req: Request, res: Response) => {
+apiRouter.post('/demo/reset', async (_req: Request, res: Response) => {
   try {
-    const plans = StorageService.resetDemo();
+    const plans = await Storage.resetDemo();
     res.status(200).json({
       success: true,
       message: 'Demonstration state reset successfully.',
