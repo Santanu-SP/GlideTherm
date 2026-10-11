@@ -119,16 +119,16 @@ export const AboutPage: React.FC = () => {
         </div>
         <div className="text-xs text-charcoal-700 space-y-2 leading-relaxed">
           <p>
-            • <strong>Decision-Support Prototype:</strong> GlideTherm is intended as an operational decision-support tool. It is NOT a medical device, emergency dispatch system, or certified occupational safety certification.
+            • <strong>Operational Decision Support:</strong> GlideTherm is intended as an operational decision-support tool for worksite supervisors. It is NOT a medical diagnostic device, emergency dispatch system, or formal occupational safety certification.
           </p>
           <p>
-            • <strong>WBGT Clarification:</strong> Calculations provided are internal heuristic estimates and do not represent certified Wet-Bulb Globe Temperature (WBGT) measurements from black-globe physical instrumentation.
+            • <strong>WBGT Clarification:</strong> Calculations provided are internal heuristic estimates based on available numerical meteorological forecasts and do not represent physical black-globe Wet-Bulb Globe Temperature (WBGT) sensor readings.
           </p>
           <p>
-            • <strong>Precedence:</strong> Official weather bulletins from governmental agencies (e.g., India Meteorological Department), local emergency declarations, and established workplace occupational safety standards always take precedence.
+            • <strong>Regulatory Precedence:</strong> Official weather advisories and warnings from meteorological authorities, governmental emergency declarations, and established workplace occupational safety standards always take precedence.
           </p>
           <p>
-            • <strong>Privacy:</strong> GlideTherm does not collect worker personal medical history, individual biometric telemetry, or GPS tracking data. All shift plan persistence operates locally.
+            • <strong>Privacy:</strong> GlideTherm does not collect worker personal medical history, individual biometric telemetry, or GPS location tracking. All shift plans are stored securely in backend persistent storage.
           </p>
         </div>
       </div>

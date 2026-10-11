@@ -24,15 +24,15 @@ import {
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { selectedLocationId, isDemoMode, triggerResetDemo } = useApp();
+  const { selectedLocationId } = useApp();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadDashboard = () => {
     setLoading(true);
     setError(null);
-    ApiService.getDashboard(selectedLocationId, 'outdoor_maintenance', isDemoMode)
+    ApiService.getDashboard(selectedLocationId, 'outdoor_maintenance')
       .then((res) => {
         setData(res);
         setLoading(false);
@@ -41,7 +41,11 @@ export const DashboardPage: React.FC = () => {
         setError(err.message || 'Failed to load dashboard data');
         setLoading(false);
       });
-  }, [selectedLocationId, isDemoMode]);
+  };
+
+  useEffect(() => {
+    loadDashboard();
+  }, [selectedLocationId]);
 
   // Dynamic greeting based on current hour
   const getGreeting = () => {
@@ -78,16 +82,10 @@ export const DashboardPage: React.FC = () => {
         </p>
         <div className="flex justify-center gap-3">
           <button
-            onClick={() => window.location.reload()}
+            onClick={loadDashboard}
             className="gt-btn-primary text-xs"
           >
             Retry Connection
-          </button>
-          <button
-            onClick={triggerResetDemo}
-            className="gt-btn-secondary text-xs"
-          >
-            Load Chennai Demo Baseline
           </button>
         </div>
       </div>

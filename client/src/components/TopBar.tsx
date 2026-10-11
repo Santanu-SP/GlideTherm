@@ -4,7 +4,6 @@ import { DataSourceBadge } from './DataSourceBadge.js';
 import {
   MapPin,
   Calendar,
-  RotateCcw,
   Menu,
 } from 'lucide-react';
 
@@ -12,9 +11,7 @@ interface TopBarProps {
   locations: LocationInfo[];
   selectedLocationId: string;
   onLocationChange: (id: string) => void;
-  isSimulatedData: boolean;
-  onToggleDemo: () => void;
-  onResetDemo: () => void;
+  retrievedAt?: string;
   onOpenMobileMenu: () => void;
 }
 
@@ -22,9 +19,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   locations,
   selectedLocationId,
   onLocationChange,
-  isSimulatedData,
-  onToggleDemo,
-  onResetDemo,
+  retrievedAt,
   onOpenMobileMenu,
 }) => {
   // Format current display date (e.g. "Sunday, 11 Oct 2026")
@@ -73,22 +68,8 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Data Source Indicator */}
-        <DataSourceBadge
-          isSimulatedData={isSimulatedData}
-          onToggleDemo={onToggleDemo}
-        />
-
-        {/* Demo Reset Button */}
-        <button
-          type="button"
-          onClick={onResetDemo}
-          className="hidden sm:inline-flex items-center gap-1.5 text-xs text-charcoal-600 hover:text-rose-700 bg-white border border-charcoal-200 hover:border-rose-300 rounded-lg px-2.5 py-1.5 transition-colors"
-          title="Reset the Chennai demonstration baseline and saved plans"
-        >
-          <RotateCcw className="w-3 h-3 text-charcoal-400 group-hover:text-rose-500" />
-          <span>Reset Demo</span>
-        </button>
+        {/* Meteorological Forecast Provider Indicator */}
+        <DataSourceBadge retrievedAt={retrievedAt} />
       </div>
     </header>
   );

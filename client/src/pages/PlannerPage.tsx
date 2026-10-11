@@ -30,7 +30,7 @@ import {
 export const PlannerPage: React.FC = () => {
   const navigate = useNavigate();
   const locationState = useLocation();
-  const { locations, profiles, selectedLocationId, setSelectedLocationId, isDemoMode, showToast } = useApp();
+  const { locations, profiles, selectedLocationId, setSelectedLocationId, showToast } = useApp();
 
   // Form State
   const [profileId, setProfileId] = useState<string>('outdoor_maintenance');
@@ -121,7 +121,7 @@ export const PlannerPage: React.FC = () => {
         notes,
       };
 
-      const result = await ApiService.generateShiftPlan(payload, isDemoMode);
+      const result = await ApiService.generateShiftPlan(payload);
       setPlan(result);
       setPlanSaveName(result.name);
       showToast('Climate-adaptive shift plan generated successfully.', 'success');
@@ -143,7 +143,7 @@ export const PlannerPage: React.FC = () => {
         name: planSaveName.trim() || plan.name,
       };
       await ApiService.saveShiftPlan(updatedPlan);
-      showToast(`Plan "${updatedPlan.name}" saved to local storage!`, 'success');
+      showToast(`Plan "${updatedPlan.name}" saved successfully.`, 'success');
     } catch {
       showToast('Failed to save plan', 'warning');
     } finally {

@@ -62,24 +62,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
         </nav>
       </div>
 
-      {/* Bottom Crew Context & Responsibility Notice */}
+      {/* Bottom Operational Status & Responsibility Notice */}
       <div className="p-4 border-t border-charcoal-100 space-y-3">
-        <div className="rounded-xl bg-forest-50/70 border border-forest-100 p-3">
-          <div className="flex items-center justify-between text-[11px] font-semibold text-forest-900 mb-1">
-            <span>Chennai Field Crew Alpha</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          </div>
-          <p className="text-[10px] text-charcoal-500">
-            Role: Municipal Maintenance Supervisor
-          </p>
-          <p className="text-[10px] text-charcoal-500">
-            Worksite: Chennai Central Ward
-          </p>
-        </div>
-
         <div className="rounded-lg bg-charcoal-50 p-2.5 text-[10px] text-charcoal-500 flex items-start gap-1.5 leading-snug">
           <ShieldAlert className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-          <span>Decision-support prototype. Follow workplace safety procedures.</span>
+          <span>Operational decision support. Always follow statutory occupational safety standards.</span>
         </div>
 
         <Link
@@ -87,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           onClick={onCloseMobile}
           className="flex items-center justify-between text-xs text-charcoal-500 hover:text-forest-700 px-2 py-1 font-medium transition-colors"
         >
-          <span>Public Landing Page</span>
+          <span>Product Overview</span>
           <ExternalLink className="w-3 h-3" />
         </Link>
       </div>

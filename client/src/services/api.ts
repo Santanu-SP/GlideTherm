@@ -125,22 +125,20 @@ export class ApiService {
 
   public static async getDashboard(
     locationId = 'chennai',
-    profileId = 'outdoor_maintenance',
-    demo = false
+    profileId = 'outdoor_maintenance'
   ): Promise<DashboardData> {
-    const res = await fetch(`${API_BASE}/dashboard?location=${locationId}&profile=${profileId}&demo=${demo}`);
+    const res = await fetch(`${API_BASE}/dashboard?location=${locationId}&profile=${profileId}`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `Failed to fetch dashboard (HTTP ${res.status})`);
+      throw new Error(err.message || err.error || `Failed to fetch dashboard (HTTP ${res.status})`);
     }
     return await res.json();
   }
 
   public static async generateShiftPlan(
-    request: ShiftPlanRequest,
-    demo = false
+    request: ShiftPlanRequest
   ): Promise<ShiftPlan> {
-    const res = await fetch(`${API_BASE}/shift-plans?demo=${demo}`, {
+    const res = await fetch(`${API_BASE}/shift-plans`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
@@ -148,7 +146,7 @@ export class ApiService {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Failed to generate shift plan');
+      throw new Error(err.message || err.error || 'Failed to generate shift plan');
     }
     return await res.json();
   }
@@ -183,14 +181,5 @@ export class ApiService {
       method: 'DELETE',
     });
     return res.ok;
-  }
-
-  public static async resetDemo(): Promise<ShiftPlan[]> {
-    const res = await fetch(`${API_BASE}/demo/reset`, {
-      method: 'POST',
-    });
-    if (!res.ok) throw new Error('Demo reset failed');
-    const data = await res.json();
-    return data.savedPlans || [];
   }
 }

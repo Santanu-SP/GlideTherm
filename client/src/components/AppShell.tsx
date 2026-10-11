@@ -2,7 +2,6 @@ import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar.js';
 import { TopBar } from './TopBar.js';
-import { ConfirmationDialog } from './ConfirmationDialog.js';
 import { ApiService, FALLBACK_LOCATIONS, FALLBACK_PROFILES } from '../services/api.js';
 import { LocationInfo, WorkerProfile } from '../types/index.js';
 import { X, CheckCircle, AlertTriangle } from 'lucide-react';
@@ -12,10 +11,7 @@ interface AppContextType {
   selectedLocationId: string;
   setSelectedLocationId: (id: string) => void;
   profiles: WorkerProfile[];
-  isDemoMode: boolean;
-  setIsDemoMode: (val: boolean) => void;
   showToast: (msg: string, type?: 'success' | 'warning' | 'info') => void;
-  triggerResetDemo: () => Promise<void>;
 }
 
 export const AppContext = createContext<AppContextType>({
@@ -23,10 +19,7 @@ export const AppContext = createContext<AppContextType>({
   selectedLocationId: 'chennai',
   setSelectedLocationId: () => {},
   profiles: FALLBACK_PROFILES,
-  isDemoMode: true,
-  setIsDemoMode: () => {},
   showToast: () => {},
-  triggerResetDemo: async () => {},
 });
 
 export const useApp = () => useContext(AppContext);
@@ -35,9 +28,7 @@ export const AppShell: React.FC = () => {
   const [locations, setLocations] = useState<LocationInfo[]>(FALLBACK_LOCATIONS);
   const [profiles, setProfiles] = useState<WorkerProfile[]>(FALLBACK_PROFILES);
   const [selectedLocationId, setSelectedLocationId] = useState<string>('chennai');
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
-  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState<boolean>(false);
 
   // Toast system
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'warning' | 'info' } | null>(null);
@@ -56,18 +47,6 @@ export const AppShell: React.FC = () => {
       .catch((err) => console.warn('Using fallback config', err));
   }, []);
 
-  const handleResetDemo = async () => {
-    try {
-      await ApiService.resetDemo();
-      setIsDemoMode(true);
-      setSelectedLocationId('chennai');
-      setIsResetConfirmOpen(false);
-      showToast('Demonstration state and Chennai maintenance baseline restored.', 'success');
-    } catch {
-      showToast('Failed to reset demo state.', 'warning');
-    }
-  };
-
   return (
     <AppContext.Provider
       value={{
@@ -75,10 +54,7 @@ export const AppShell: React.FC = () => {
         selectedLocationId,
         setSelectedLocationId,
         profiles,
-        isDemoMode,
-        setIsDemoMode,
         showToast,
-        triggerResetDemo: handleResetDemo,
       }}
     >
       <div className="flex h-screen bg-canvas overflow-hidden">
@@ -115,9 +91,6 @@ export const AppShell: React.FC = () => {
             locations={locations}
             selectedLocationId={selectedLocationId}
             onLocationChange={setSelectedLocationId}
-            isSimulatedData={isDemoMode}
-            onToggleDemo={() => setIsDemoMode(!isDemoMode)}
-            onResetDemo={() => setIsResetConfirmOpen(true)}
             onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           />
 
@@ -139,17 +112,6 @@ export const AppShell: React.FC = () => {
             <span>{toast.message}</span>
           </div>
         )}
-
-        {/* Demo Reset Confirmation Modal */}
-        <ConfirmationDialog
-          isOpen={isResetConfirmOpen}
-          title="Reset Demonstration Baseline?"
-          message="This will restore the standard Chennai Outdoor Maintenance Crew scenario, reset the schedule parameters, and ensure default demo plans are ready."
-          confirmLabel="Reset Scenario"
-          cancelLabel="Cancel"
-          onConfirm={handleResetDemo}
-          onCancel={() => setIsResetConfirmOpen(false)}
-        />
       </div>
     </AppContext.Provider>
   );

@@ -45,7 +45,7 @@ export const LandingPage: React.FC = () => {
               onClick={() => navigate('/app')}
               className="gt-btn-secondary text-xs px-3.5 py-2 hidden sm:inline-flex"
             >
-              <span>Explore Demo</span>
+              <span>Open Dashboard</span>
             </button>
             <button
               onClick={() => navigate('/app/planner')}
@@ -89,7 +89,7 @@ export const LandingPage: React.FC = () => {
                 onClick={() => navigate('/app')}
                 className="gt-btn-secondary text-sm px-5 py-3 shadow-xs hover:bg-charcoal-50"
               >
-                <span>Explore the Demo (Chennai Baseline)</span>
+                <span>Open Operations Dashboard</span>
               </button>
             </div>
           </div>

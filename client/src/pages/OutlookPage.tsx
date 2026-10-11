@@ -26,30 +26,55 @@ import {
 } from 'lucide-react';
 
 export const OutlookPage: React.FC = () => {
-  const { selectedLocationId, isDemoMode } = useApp();
+  const { selectedLocationId } = useApp();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [viewScope, setViewScope] = useState<'24h' | 'shift'>('24h');
 
-  useEffect(() => {
+  const loadOutlook = () => {
     setLoading(true);
-    ApiService.getDashboard(selectedLocationId, 'outdoor_maintenance', isDemoMode)
+    setError(null);
+    ApiService.getDashboard(selectedLocationId, 'outdoor_maintenance')
       .then((res) => {
         setData(res);
         setLoading(false);
       })
       .catch((err) => {
-        console.error(err);
+        setError(err.message || 'Failed to retrieve hourly outlook');
         setLoading(false);
       });
-  }, [selectedLocationId, isDemoMode]);
+  };
 
-  if (loading || !data) {
+  useEffect(() => {
+    loadOutlook();
+  }, [selectedLocationId]);
+
+  if (loading) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="h-16 bg-charcoal-200/50 rounded-2xl w-full" />
         <div className="h-72 bg-charcoal-200/50 rounded-2xl w-full" />
         <div className="h-72 bg-charcoal-200/50 rounded-2xl w-full" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="gt-card p-8 text-center max-w-lg mx-auto my-12 border-rose-200">
+        <h3 className="text-base font-semibold text-charcoal-900 mb-2">
+          Unable to Load Hourly Outlook
+        </h3>
+        <p className="text-xs text-charcoal-600 mb-4">
+          {error || 'An unexpected error occurred while fetching meteorological data.'}
+        </p>
+        <button
+          onClick={loadOutlook}
+          className="gt-btn-primary text-xs"
+        >
+          Retry Connection
+        </button>
       </div>
     );
   }

@@ -235,7 +235,7 @@ export const PlansPage: React.FC = () => {
       <ConfirmationDialog
         isOpen={Boolean(planToDelete)}
         title="Delete Shift Plan?"
-        message={`Are you sure you want to permanently delete "${planToDelete?.name}"? This action removes the saved record from the local database.`}
+        message={`Are you sure you want to permanently delete "${planToDelete?.name}"? This action removes the saved record from persistent storage.`}
         confirmLabel="Delete Plan"
         cancelLabel="Cancel"
         isDestructive
