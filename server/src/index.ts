@@ -3,7 +3,7 @@ import { StorageService } from './services/storageService.js';
 
 const PORT = process.env.PORT || 5001;
 
-// Ensure demo seed data is prepared
+// Initialize storage repository
 try {
   StorageService.getSavedPlans();
 } catch (err) {

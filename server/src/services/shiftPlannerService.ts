@@ -6,7 +6,7 @@ import {
   RiskCategory,
 } from '../types/index.js';
 import { HeatAssessmentService } from './heatAssessmentService.js';
-import { SUPPORTED_LOCATIONS, WORKER_PROFILES } from '../data/demoScenario.js';
+import { SUPPORTED_LOCATIONS, WORKER_PROFILES } from '../data/operationalConfig.js';
 
 export class ShiftPlannerService {
   /**

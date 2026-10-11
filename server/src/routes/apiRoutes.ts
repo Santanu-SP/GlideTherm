@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { SUPPORTED_LOCATIONS, WORKER_PROFILES, getDeterministicDemoForecast } from '../data/demoScenario.js';
+import { SUPPORTED_LOCATIONS, WORKER_PROFILES } from '../data/operationalConfig.js';
 import { WeatherService } from '../services/weatherService.js';
 import { HeatAssessmentService } from '../services/heatAssessmentService.js';
 import { ShiftPlannerService } from '../services/shiftPlannerService.js';
@@ -13,7 +13,6 @@ const Storage = usesDynamo
   ? (DynamoStorageService as unknown as typeof StorageService)
   : StorageService;
 
-
 export const apiRouter = Router();
 
 // GET /api/health
@@ -22,6 +21,7 @@ apiRouter.get('/health', (_req: Request, res: Response) => {
     status: 'ok',
     service: 'GlideTherm API',
     version: '1.0.0',
+    storageEngine: usesDynamo ? 'Amazon DynamoDB' : 'Local JSON Store',
     timestamp: new Date().toISOString(),
   });
 });
@@ -43,13 +43,12 @@ apiRouter.get('/weather', async (req: Request, res: Response) => {
   try {
     const locationId = (req.query.location as string) || 'chennai';
     const dateStr = (req.query.date as string) || new Date().toISOString().split('T')[0];
-    const forceDemo = req.query.demo === 'true';
 
-    const weather = await WeatherService.getForecast(locationId, dateStr, forceDemo);
+    const weather = await WeatherService.getForecast(locationId, dateStr);
     res.status(200).json(weather);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown weather service error';
-    res.status(500).json({ error: 'Failed to retrieve forecast', details: message });
+    const message = err instanceof Error ? err.message : 'Weather service unavailable';
+    res.status(503).json({ error: 'WEATHER_UNAVAILABLE', message });
   }
 });
 
@@ -59,9 +58,8 @@ apiRouter.get('/dashboard', async (req: Request, res: Response) => {
     const locationId = (req.query.location as string) || 'chennai';
     const profileId = (req.query.profile as string) || 'outdoor_maintenance';
     const dateStr = (req.query.date as string) || new Date().toISOString().split('T')[0];
-    const forceDemo = req.query.demo === 'true';
 
-    const weather = await WeatherService.getForecast(locationId, dateStr, forceDemo);
+    const weather = await WeatherService.getForecast(locationId, dateStr);
     const profile = WORKER_PROFILES.find(p => p.id === profileId) || WORKER_PROFILES[0];
 
     // Assess timeline using profile defaults
@@ -117,8 +115,8 @@ apiRouter.get('/dashboard', async (req: Request, res: Response) => {
       },
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown dashboard error';
-    res.status(500).json({ error: 'Failed to construct dashboard', details: message });
+    const message = err instanceof Error ? err.message : 'Weather service unavailable';
+    res.status(503).json({ error: 'WEATHER_UNAVAILABLE', message });
   }
 });
 
@@ -153,8 +151,7 @@ apiRouter.post('/shift-plans', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Missing required shift planning fields.' });
     }
 
-    const forceDemo = req.query.demo === 'true';
-    const weather = await WeatherService.getForecast(requestData.locationId, requestData.date, forceDemo);
+    const weather = await WeatherService.getForecast(requestData.locationId, requestData.date);
 
     const plan = ShiftPlannerService.generatePlan(
       requestData,
@@ -225,46 +222,5 @@ apiRouter.delete('/shift-plans/:id', async (req: Request, res: Response) => {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Storage delete error';
     res.status(500).json({ error: 'Failed to delete plan', details: message });
-  }
-});
-
-// GET /api/demo/scenario
-apiRouter.get('/demo/scenario', (_req: Request, res: Response) => {
-  const dateStr = '2026-10-11';
-  const demoPoints = getDeterministicDemoForecast(dateStr);
-  const location = SUPPORTED_LOCATIONS[0];
-  const profile = WORKER_PROFILES[0];
-
-  res.status(200).json({
-    scenarioName: 'Chennai Outdoor Maintenance Crew',
-    location,
-    profile,
-    shift: {
-      startTime: '09:00',
-      endTime: '17:00',
-      workIntensity: 'heavy',
-      shadeAvailability: 'limited',
-      workSetting: 'mostly_outdoors',
-      indoorTasksAvailable: true,
-      breakPreferenceMinutes: 15,
-    },
-    forecast: demoPoints,
-    isSimulatedData: true,
-    dataSourceLabel: 'Deterministic Demonstration Scenario (Chennai Heat Baseline)',
-  });
-});
-
-// POST /api/demo/reset
-apiRouter.post('/demo/reset', async (_req: Request, res: Response) => {
-  try {
-    const plans = await Storage.resetDemo();
-    res.status(200).json({
-      success: true,
-      message: 'Demonstration state reset successfully.',
-      savedPlans: plans,
-    });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Reset failed';
-    res.status(500).json({ error: 'Failed to reset demo', details: message });
   }
 });

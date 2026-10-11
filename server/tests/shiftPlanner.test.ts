@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ShiftPlannerService } from '../src/services/shiftPlannerService.js';
-import { getDeterministicDemoForecast } from '../src/data/demoScenario.js';
+import { getDeterministicDemoForecast } from '../src/data/operationalConfig.js';
 import { ShiftPlanRequest } from '../src/types/index.js';
 
 describe('ShiftPlannerService', () => {

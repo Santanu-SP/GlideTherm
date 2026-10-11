@@ -2,8 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ShiftPlan } from '../types/index.js';
-import { ShiftPlannerService } from './shiftPlannerService.js';
-import { getDeterministicDemoForecast, SUPPORTED_LOCATIONS, WORKER_PROFILES } from '../data/demoScenario.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,7 +14,7 @@ export class StorageService {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     if (!fs.existsSync(STORAGE_FILE)) {
-      this.resetDemo();
+      fs.writeFileSync(STORAGE_FILE, '[]', 'utf-8');
     }
   }
 
@@ -63,41 +61,10 @@ export class StorageService {
     return false;
   }
 
-  public static resetDemo(): ShiftPlan[] {
+  public static resetTestStorage(): void {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
-
-    const demoDate = '2026-10-11';
-    const demoWeather = getDeterministicDemoForecast(demoDate);
-    const demoProfile = WORKER_PROFILES[0]; // Outdoor Maintenance Crew
-    const demoLocation = SUPPORTED_LOCATIONS[0]; // Chennai
-
-    const defaultPlan = ShiftPlannerService.generatePlan(
-      {
-        locationId: demoLocation.id,
-        date: demoDate,
-        profileId: demoProfile.id,
-        startTime: '09:00',
-        endTime: '17:00',
-        workIntensity: 'heavy',
-        shadeAvailability: 'limited',
-        workSetting: 'mostly_outdoors',
-        breakPreferenceMinutes: 15,
-        indoorTasksAvailable: true,
-        shiftReschedulingAllowed: true,
-        notes: 'Official demonstration scenario: Chennai Municipal & Roadway Maintenance Crew',
-      },
-      demoWeather,
-      true,
-      'Deterministic Demonstration Scenario (Chennai Heat Baseline)'
-    );
-
-    defaultPlan.id = 'demo-chennai-plan';
-    defaultPlan.name = 'Chennai Outdoor Maintenance Crew (Demo Baseline)';
-
-    const initialList = [defaultPlan];
-    fs.writeFileSync(STORAGE_FILE, JSON.stringify(initialList, null, 2), 'utf-8');
-    return initialList;
+    fs.writeFileSync(STORAGE_FILE, '[]', 'utf-8');
   }
 }

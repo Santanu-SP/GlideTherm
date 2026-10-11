@@ -18,8 +18,6 @@ import {
   ScanCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { ShiftPlan } from '../types/index.js';
-import { ShiftPlannerService } from './shiftPlannerService.js';
-import { getDeterministicDemoForecast, SUPPORTED_LOCATIONS, WORKER_PROFILES } from '../data/demoScenario.js';
 
 const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME as string;
 const REGION = process.env.AWS_REGION || 'ap-south-1';
@@ -113,38 +111,5 @@ export class DynamoStorageService {
       })
     );
     return true;
-  }
-
-  public static async resetDemo(): Promise<ShiftPlan[]> {
-    const demoDate = '2026-10-11';
-    const demoWeather = getDeterministicDemoForecast(demoDate);
-    const demoProfile = WORKER_PROFILES[0];
-    const demoLocation = SUPPORTED_LOCATIONS[0];
-
-    const defaultPlan = ShiftPlannerService.generatePlan(
-      {
-        locationId: demoLocation.id,
-        date: demoDate,
-        profileId: demoProfile.id,
-        startTime: '09:00',
-        endTime: '17:00',
-        workIntensity: 'heavy',
-        shadeAvailability: 'limited',
-        workSetting: 'mostly_outdoors',
-        breakPreferenceMinutes: 15,
-        indoorTasksAvailable: true,
-        shiftReschedulingAllowed: true,
-        notes: 'Official demonstration scenario: Chennai Municipal & Roadway Maintenance Crew',
-      },
-      demoWeather,
-      true,
-      'Deterministic Demonstration Scenario (Chennai Heat Baseline)'
-    );
-
-    defaultPlan.id = 'demo-chennai-plan';
-    defaultPlan.name = 'Chennai Outdoor Maintenance Crew (Demo Baseline)';
-
-    await this.savePlan(defaultPlan);
-    return [defaultPlan];
   }
 }

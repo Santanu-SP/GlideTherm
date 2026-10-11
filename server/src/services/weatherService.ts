@@ -1,10 +1,9 @@
 import { HourlyWeatherPoint, LocationInfo } from '../types/index.js';
-import { getDeterministicDemoForecast, SUPPORTED_LOCATIONS } from '../data/demoScenario.js';
+import { SUPPORTED_LOCATIONS } from '../data/operationalConfig.js';
 
 interface CacheEntry {
   timestamp: number;
   data: HourlyWeatherPoint[];
-  isSimulated: boolean;
   dataSourceLabel: string;
 }
 
@@ -24,58 +23,40 @@ export interface WeatherResponse {
 
 export class WeatherService {
   /**
-   * Retrieves weather forecast for a location and date.
-   * Uses Open-Meteo free API with strict timeout and fallback to deterministic demo dataset.
+   * Retrieves hourly weather forecast for a supported location and date.
+   * Connects directly to Open-Meteo numerical weather prediction API.
+   * Caches responses for 15 minutes to minimize redundant requests.
+   * If Open-Meteo is temporarily unreachable, serves stale cache if available,
+   * otherwise throws an informative error without fabricating weather data.
    */
   public static async getForecast(
     locationId: string,
-    targetDate?: string,
-    forceDemo = false
+    targetDate?: string
   ): Promise<WeatherResponse> {
     const loc = SUPPORTED_LOCATIONS.find(l => l.id.toLowerCase() === locationId.toLowerCase()) 
       || SUPPORTED_LOCATIONS[0];
 
     const todayStr = targetDate || new Date().toISOString().split('T')[0];
-    const cacheKey = `${loc.id}_${todayStr}_${forceDemo}`;
+    const cacheKey = `${loc.id}_${todayStr}`;
 
-    // Return cached if fresh
+    // Return fresh cached forecast if available
     const cached = weatherCache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
       return {
         location: loc,
         date: todayStr,
         hourly: cached.data,
-        isSimulatedData: cached.isSimulated,
+        isSimulatedData: false,
         dataSourceLabel: cached.dataSourceLabel,
         attribution: 'Weather data by Open-Meteo (https://open-meteo.com/)',
         retrievedAt: new Date(cached.timestamp).toISOString(),
       };
     }
 
-    if (forceDemo) {
-      const demoData = getDeterministicDemoForecast(todayStr);
-      weatherCache.set(cacheKey, {
-        timestamp: Date.now(),
-        data: demoData,
-        isSimulated: true,
-        dataSourceLabel: 'Deterministic Demonstration Scenario (Chennai Heat Baseline)',
-      });
-      return {
-        location: loc,
-        date: todayStr,
-        hourly: demoData,
-        isSimulatedData: true,
-        dataSourceLabel: 'Deterministic Demonstration Scenario (Chennai Heat Baseline)',
-        attribution: 'Weather data by Open-Meteo (https://open-meteo.com/)',
-        retrievedAt: new Date().toISOString(),
-        note: 'Displaying verified demonstration scenario for controlled evaluation.',
-      };
-    }
-
-    // Attempt live fetch from Open-Meteo
+    // Live fetch from Open-Meteo
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4500); // 4.5s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout
 
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,shortwave_radiation&timezone=auto&start_date=${todayStr}&end_date=${todayStr}`;
 
@@ -121,42 +102,56 @@ export class WeatherService {
         };
       });
 
-      weatherCache.set(cacheKey, {
+      const entry: CacheEntry = {
         timestamp: Date.now(),
         data: hourlyPoints,
-        isSimulated: false,
-        dataSourceLabel: 'Live Open-Meteo Meteorological Forecast',
-      });
+        dataSourceLabel: 'Open-Meteo Meteorological Forecast',
+      };
+      weatherCache.set(cacheKey, entry);
 
       return {
         location: loc,
         date: todayStr,
         hourly: hourlyPoints,
         isSimulatedData: false,
-        dataSourceLabel: 'Live Open-Meteo Meteorological Forecast',
+        dataSourceLabel: 'Open-Meteo Meteorological Forecast',
         attribution: 'Weather data by Open-Meteo (https://open-meteo.com/)',
-        retrievedAt: new Date().toISOString(),
+        retrievedAt: new Date(entry.timestamp).toISOString(),
       };
-    } catch (err) {
-      // Graceful fallback to verified deterministic scenario
-      const demoData = getDeterministicDemoForecast(todayStr);
-      weatherCache.set(cacheKey, {
-        timestamp: Date.now(),
-        data: demoData,
-        isSimulated: true,
-        dataSourceLabel: 'Demonstration Fallback (Offline / Sandbox Mode)',
-      });
+    } catch (err: unknown) {
+      // If we have an existing (even stale) cached forecast, serve it with clear timestamp attribution
+      if (cached) {
+        return {
+          location: loc,
+          date: todayStr,
+          hourly: cached.data,
+          isSimulatedData: false,
+          dataSourceLabel: cached.dataSourceLabel,
+          attribution: 'Weather data by Open-Meteo (https://open-meteo.com/)',
+          retrievedAt: new Date(cached.timestamp).toISOString(),
+          note: `Live forecast provider temporarily unreachable. Showing cached forecast from ${new Date(cached.timestamp).toLocaleTimeString()}.`,
+        };
+      }
 
-      return {
-        location: loc,
-        date: todayStr,
-        hourly: demoData,
-        isSimulatedData: true,
-        dataSourceLabel: 'Demonstration Fallback (Offline / Sandbox Mode)',
-        attribution: 'Weather data by Open-Meteo (https://open-meteo.com/)',
-        retrievedAt: new Date().toISOString(),
-        note: 'Live forecast provider unreachable or in offline mode; using verified deterministic scenario.',
-      };
+      const errMessage = err instanceof Error ? err.message : 'Network error';
+      throw new Error(`Weather forecast temporarily unavailable from Open-Meteo for ${loc.name} (${errMessage}).`);
     }
+  }
+
+  /**
+   * Helper to pre-populate cache for testing purposes
+   */
+  public static setTestForecast(locationId: string, date: string, hourly: HourlyWeatherPoint[]): void {
+    const loc = SUPPORTED_LOCATIONS.find(l => l.id.toLowerCase() === locationId.toLowerCase()) 
+      || SUPPORTED_LOCATIONS[0];
+    weatherCache.set(`${loc.id}_${date}`, {
+      timestamp: Date.now(),
+      data: hourly,
+      dataSourceLabel: 'Test Fixture Forecast',
+    });
+  }
+
+  public static clearCache(): void {
+    weatherCache.clear();
   }
 }
